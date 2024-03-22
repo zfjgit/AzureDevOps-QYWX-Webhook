@@ -22,8 +22,14 @@ namespace AzureDevOps_QYWX_Webhook.Controllers
             _httpClient = httpClient;
         }
 
-        [HttpPost(Name = "PostWebhook")]
-        public async Task<IActionResult> Post(object json)
+        /// <summary>
+        /// 转发 Azure DevOps Webhook 通知到企业微信机器人
+        /// </summary>
+        /// <param name="json">请输入json格式数据 <see cref="https://developer.work.weixin.qq.com/document/path/91770"/> </param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("PostNotification")]
+        public async Task<IActionResult> PostNotification(object json)
         {
             _logger.LogInformation("Webhook received");
             
@@ -51,15 +57,15 @@ namespace AzureDevOps_QYWX_Webhook.Controllers
 
         private async Task Send2QYWXBot(string md)
         {
-            JsonObject content = new JsonObject
+            JsonObject markdown = new JsonObject
             {
-                { "markdown", md }
+                { "content", md }
             };
 
             JsonObject msg = new JsonObject
             {
                 { "msgtype", "markdown" },
-                { "markdown", content }
+                { "markdown", markdown }
             };
 
             string jsonMessage = JsonSerializer.Serialize(msg);
@@ -80,11 +86,14 @@ namespace AzureDevOps_QYWX_Webhook.Controllers
             {
                 HttpResponseMessage response = await _httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
+
+                string? result = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation($"Message sent to QYWX Bot result: {result}");
             }
             catch (Exception ex)
             {
                 // 处理错误，例如记录日志
-                _logger.LogError($"Failed to send message to WeChat webhook: {ex.Message}");
+                _logger.LogError($"Failed to send message to QYWX Bot: {ex.Message}");
             }
         }
     }
